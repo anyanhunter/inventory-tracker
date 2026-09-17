@@ -19,6 +19,8 @@ model Organization {
   memberships Membership[]
   locations Location[]
   inventoryItems InventoryItem[]
+  categories Category[]
+  auditLogs      AuditLog[]
 }
 model User {
   id           String       @id @default(cuid())
@@ -29,6 +31,7 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   memberships  Membership[]
+  auditLogs   AuditLog[]
 }
 
 model Membership {
@@ -73,7 +76,39 @@ model InventoryItem {
 
   organizationId String
   locationId     String?
+  categoryId     String?
 
   organization   Organization @relation(fields: [organizationId], references: [id])
   location       Location?    @relation(fields: [locationId], references: [id])
+  category       Category?     @relation(fields: [categoryId], references: [id])
+}
+
+model Category {
+  id             String       @id @default(cuid())
+  name           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organizationId String
+  parentId       String?
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  parent         Category?    @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children       Category[]   @relation("CategoryHierarchy")
+  inventoryItems InventoryItem[]
+}
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String
+  beforeData     Json?
+  afterData      Json?
+  createdAt      DateTime @default(now())
+
+  userId         String
+  organizationId String
+
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }
