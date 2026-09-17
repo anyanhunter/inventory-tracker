@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships Membership[]
+  locations Location[]
+  inventoryItems InventoryItem[]
+}
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  role           Role         @default(MEMBER)
+  createdAt      DateTime     @default(now())
+
+  userId         String
+  organizationId String
+
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+model Location {
+  id             String       @id @default(cuid())
+  name           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organizationId String
+  parentId       String?
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  parent         Location?    @relation("LocationHierarchy", fields: [parentId], references: [id])
+  children       Location[]   @relation("LocationHierarchy")
+  inventoryItems InventoryItem[]
+}
+model InventoryItem {
+  id             String       @id @default(cuid())
+  name           String
+  quantity       Int          @default(0)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organizationId String
+  locationId     String?
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  location       Location?    @relation(fields: [locationId], references: [id])
+}

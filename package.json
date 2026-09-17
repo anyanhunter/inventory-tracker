@@ -4,7 +4,8 @@
   "description": "Building inventory tracking application",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "prisma skills sync || exit 0"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,10 @@
   },
   "homepage": "https://github.com/anyanhunter/inventory-tracker#readme",
   "dependencies": {
+    "@prisma/client": "^7.10.0",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "prisma": "^7.10.0"
   }
 }
