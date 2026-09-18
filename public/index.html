@@ -174,6 +174,9 @@
 					<button id="manage-locations-button" class="secondary-button">
 						Locations
 					</button>
+					<button id="manage-categories-button" class="secondary-button">
+	Categories
+</button>
 
 					<button id="add-item-button" class="primary-button">
 						+ Add Item
@@ -244,6 +247,39 @@
 		<p id="location-message" class="message"></p>
 
 		<div id="locations-list"></div>
+	</div>
+</div>
+<div id="categories-modal" class="modal hidden">
+	<div class="modal-card">
+		<div class="modal-header">
+			<div>
+				<h3>Manage Categories</h3>
+				<p>Create categories and nest subcategories as deeply as needed.</p>
+			</div>
+			<button id="close-categories-modal" class="text-button">✕</button>
+		</div>
+
+		<form id="add-category-form">
+			<label>
+				Category Name
+				<input id="category-name" placeholder="e.g. Beverages, Brand, Bottles" required>
+			</label>
+
+			<label>
+				Inside
+				<select id="category-parent">
+					<option value="">Top-level category</option>
+				</select>
+			</label>
+
+			<button class="primary-button" type="submit">
+				+ Add Category
+			</button>
+		</form>
+
+		<p id="category-message" class="message"></p>
+
+		<div id="categories-list"></div>
 	</div>
 </div>
 

@@ -425,7 +425,187 @@ app.post("/api/organizations/:organizationId/locations", authenticate, async (re
 		res.status(500).json({ error: "Unable to create location" });
 	}
 });
+// Delete a location
+app.delete(
+	"/api/organizations/:organizationId/locations/:locationId",
+	authenticate,
+	async (req, res) => {
+		try {
+			const { organizationId, locationId } = req.params;
 
+			const membership = await getMembership(
+				req.user.id,
+				organizationId
+			);
+
+			if (!membership) {
+				return res.status(403).json({ error: "Access denied" });
+			}
+
+			const location = await prisma.location.findFirst({
+				where: {
+					id: locationId,
+					organizationId
+				},
+				include: {
+	children: true,
+	inventoryItems: true
+}
+			});
+
+			if (!location) {
+				return res.status(404).json({
+					error: "Location not found"
+				});
+			}
+
+			if (location.children.length > 0) {
+				return res.status(400).json({
+					error: "Delete the locations inside this location first."
+				});
+			}
+
+			if (location.inventoryItems.length > 0) {
+				return res.status(400).json({
+					error: "Move or remove the inventory in this location first."
+				});
+			}
+
+			await prisma.location.delete({
+				where: { id: locationId }
+			});
+
+			res.json({ message: "Location deleted" });
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({
+				error: "Unable to delete location"
+			});
+		}
+	}
+);
+// --------------------
+// Categories
+// --------------------
+
+// Get all categories for an organization
+app.get("/api/organizations/:organizationId/categories", authenticate, async (req, res) => {
+	try {
+		const { organizationId } = req.params;
+
+		const membership = await getMembership(req.user.id, organizationId);
+
+		if (!membership) {
+			return res.status(403).json({ error: "Access denied" });
+		}
+
+		const categories = await prisma.category.findMany({
+			where: { organizationId },
+			orderBy: { name: "asc" }
+		});
+
+		res.json(categories);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Unable to load categories" });
+	}
+});
+
+// Create a category
+app.post("/api/organizations/:organizationId/categories", authenticate, async (req, res) => {
+	try {
+		const { organizationId } = req.params;
+		const { name, parentId } = req.body;
+
+		const membership = await getMembership(req.user.id, organizationId);
+
+		if (!membership) {
+			return res.status(403).json({ error: "Access denied" });
+		}
+
+		if (!name?.trim()) {
+			return res.status(400).json({ error: "Category name is required" });
+		}
+
+		if (parentId) {
+			const parent = await prisma.category.findFirst({
+				where: {
+					id: parentId,
+					organizationId
+				}
+			});
+
+			if (!parent) {
+				return res.status(400).json({ error: "Invalid parent category" });
+			}
+		}
+
+		const category = await prisma.category.create({
+			data: {
+				name: name.trim(),
+				organizationId,
+				parentId: parentId || null
+			}
+		});
+
+		res.status(201).json(category);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Unable to create category" });
+	}
+});
+// Delete a category
+app.delete(
+	"/api/organizations/:organizationId/categories/:categoryId",
+	authenticate,
+	async (req, res) => {
+		try {
+			const { organizationId, categoryId } = req.params;
+
+			const membership = await getMembership(req.user.id, organizationId);
+
+			if (!membership) {
+				return res.status(403).json({ error: "Access denied" });
+			}
+
+			const category = await prisma.category.findFirst({
+				where: {
+					id: categoryId,
+					organizationId
+				},
+				include: {
+					children: true,
+					inventoryItems: true
+				}
+			});
+
+			if (!category) {
+				return res.status(404).json({ error: "Category not found" });
+			}
+
+			if (category.children.length > 0) {
+				return res.status(400).json({
+					error: "Delete the subcategories inside this category first."
+				});
+			}
+
+			if (category.inventoryItems.length > 0) {
+				return res.status(400).json({
+					error: "Move or remove the inventory in this category first."
+				});
+			}
+
+			await prisma.category.delete({
+				where: { id: categoryId }
+			});
+
+			res.json({ message: "Category deleted" });
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({ error: "Unable to delete category" });
+		}
+	}
+);
 // --------------------
 // Inventory
 // --------------------

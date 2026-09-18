@@ -360,13 +360,33 @@ locationsModal.addEventListener("click", (event) => {
 		`).join("")}
 	`;
 
-	locationsList.innerHTML = locations.length
-		? locations.map((location) => `
-			<div class="location-row">
+	function buildLocationTree(parentId = null, depth = 0) {
+	const children = locations.filter(
+		(location) => location.parentId === parentId
+	);
+
+	return children.map((location) => `
+		<div class="location-row" style="padding-left: ${depth * 24}px;">
+			<span>
+				${depth > 0 ? "↳ " : ""}
 				<strong>${escapeHtml(location.name)}</strong>
-			</div>
-		`).join("")
-		: `<p>No locations yet.</p>`;
+<button
+	class="text-button delete-location-button"
+	data-id="${location.id}"
+	data-name="${escapeHtml(location.name)}"
+>
+	Delete
+</button>
+			</span>
+		</div>
+
+		${buildLocationTree(location.id, depth + 1)}
+	`).join("");
+}
+
+locationsList.innerHTML = locations.length
+	? buildLocationTree()
+	: `<p>No locations yet.</p>`;
 }document.getElementById("add-location-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 
@@ -398,4 +418,180 @@ locationsModal.addEventListener("click", (event) => {
 	locationMessage.textContent = "";
 
 	await loadLocationsManager();
+});
+document.getElementById("locations-list").addEventListener("click", async (event) => {
+	const button = event.target.closest(".delete-location-button");
+
+	if (!button) return;
+
+	const locationId = button.dataset.id;
+	const locationName = button.dataset.name;
+
+	const confirmed = confirm(`Delete "${locationName}"?`);
+
+	if (!confirmed) return;
+
+	const locationMessage = document.getElementById("location-message");
+
+	const response = await fetch(
+		`/api/organizations/${currentOrganizationId}/locations/${locationId}`,
+		{
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		}
+	);
+
+	const data = await response.json();
+
+	if (!response.ok) {
+		locationMessage.textContent =
+			data.error || "Unable to delete location.";
+		return;
+	}
+
+	locationMessage.textContent = "";
+	await loadLocationsManager();
+});
+const categoriesModal = document.getElementById("categories-modal");
+const manageCategoriesButton = document.getElementById("manage-categories-button");
+const closeCategoriesModal = document.getElementById("close-categories-modal");
+
+manageCategoriesButton.addEventListener("click", async () => {
+	await loadCategoriesManager();
+	categoriesModal.classList.remove("hidden");
+});
+
+closeCategoriesModal.addEventListener("click", () => {
+	categoriesModal.classList.add("hidden");
+});
+
+categoriesModal.addEventListener("click", (event) => {
+	if (event.target === categoriesModal) {
+		categoriesModal.classList.add("hidden");
+	}
+});
+async function loadCategoriesManager() {
+	if (!currentOrganizationId) return;
+
+	const response = await fetch(
+		`/api/organizations/${currentOrganizationId}/categories`,
+		{
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		}
+	);
+
+	const categories = await response.json();
+
+	const parentSelect = document.getElementById("category-parent");
+	const categoriesList = document.getElementById("categories-list");
+
+	function buildCategoryTree(parentId = null, depth = 0) {
+		const children = categories.filter(
+			(category) => category.parentId === parentId
+		);
+
+		return children.map((category) => `
+			<div class="location-row" style="padding-left: ${depth * 24}px;">
+				<span>
+					${depth > 0 ? "↳ " : ""}
+					<strong>${escapeHtml(category.name)}</strong>
+				</span>
+
+				<button
+					class="text-button delete-category-button"
+					data-id="${category.id}"
+					data-name="${escapeHtml(category.name)}"
+				>
+					Delete
+				</button>
+			</div>
+
+			${buildCategoryTree(category.id, depth + 1)}
+		`).join("");
+	}
+
+	parentSelect.innerHTML = `
+		<option value="">Top-level category</option>
+		${categories.map((category) => `
+			<option value="${category.id}">
+				${escapeHtml(category.name)}
+			</option>
+		`).join("")}
+	`;
+
+	categoriesList.innerHTML = categories.length
+		? buildCategoryTree()
+		: `<p>No categories yet.</p>`;
+}
+document.getElementById("add-category-form").addEventListener("submit", async (event) => {
+	event.preventDefault();
+
+	const categoryMessage = document.getElementById("category-message");
+
+	const response = await fetch(
+		`/api/organizations/${currentOrganizationId}/categories`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`
+			},
+			body: JSON.stringify({
+				name: document.getElementById("category-name").value,
+				parentId: document.getElementById("category-parent").value || null
+			})
+		}
+	);
+
+	const data = await response.json();
+
+	if (!response.ok) {
+		categoryMessage.textContent =
+			data.error || "Unable to add category.";
+		return;
+	}
+
+	document.getElementById("category-name").value = "";
+	categoryMessage.textContent = "";
+
+	await loadCategoriesManager();
+});
+document.getElementById("categories-list").addEventListener("click", async (event) => {
+	const button = event.target.closest(".delete-category-button");
+
+	if (!button) return;
+
+	const categoryId = button.dataset.id;
+	const categoryName = button.dataset.name;
+
+	const confirmed = confirm(`Delete "${categoryName}"?`);
+
+	if (!confirmed) return;
+
+	const categoryMessage = document.getElementById("category-message");
+
+	const response = await fetch(
+		`/api/organizations/${currentOrganizationId}/categories/${categoryId}`,
+		{
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		}
+	);
+
+	const data = await response.json();
+
+	if (!response.ok) {
+		categoryMessage.textContent =
+			data.error || "Unable to delete category.";
+		return;
+	}
+
+	categoryMessage.textContent = "";
+	await loadCategoriesManager();
 });
