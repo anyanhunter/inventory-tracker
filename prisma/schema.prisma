@@ -21,6 +21,7 @@ model Organization {
   inventoryItems InventoryItem[]
   categories Category[]
   auditLogs      AuditLog[]
+  inviteCodes InviteCode[]
 }
 model User {
   id           String       @id @default(cuid())
@@ -51,6 +52,16 @@ model Membership {
 enum Role {
   ADMIN
   MEMBER
+}
+model InviteCode {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }
 model Location {
   id             String       @id @default(cuid())

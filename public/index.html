@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Inventory Tracker</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+	<div class="app-shell">
+
+		<header class="topbar">
+			<div class="brand">
+				<div class="brand-mark">I</div>
+				<div>
+					<h1>Inventory</h1>
+					<p>Simple inventory management</p>
+				</div>
+			</div>
+		</header>
+
+		<main>
+
+			<!-- LOGIN / REGISTER -->
+			<section id="auth-view" class="auth-view">
+				<div class="auth-card">
+
+					<div class="auth-heading">
+						<span class="eyebrow">WELCOME</span>
+						<h2>Keep track of what you have and where it lives.</h2>
+						<p>Sign in to access your organization's inventory.</p>
+					</div>
+
+					<div class="auth-tabs">
+						<button id="login-tab" class="tab active">Sign In</button>
+						<button id="register-tab" class="tab">Create Account</button>
+					</div>
+
+					<form id="login-form">
+						<label>
+							Email
+							<input id="login-email" type="email" required>
+						</label>
+
+						<label>
+							Password
+							<input id="login-password" type="password" required>
+						</label>
+
+						<button class="primary-button" type="submit">
+							Sign In
+						</button>
+					</form>
+
+					<form id="register-form" class="hidden">
+						<div class="name-row">
+							<label>
+								First Name
+								<input id="register-first-name" required>
+							</label>
+
+							<label>
+								Last Name
+								<input id="register-last-name" required>
+							</label>
+						</div>
+
+						<label>
+							Email
+							<input id="register-email" type="email" required>
+						</label>
+
+						<label>
+							Password
+							<input
+								id="register-password"
+								type="password"
+								minlength="8"
+								required
+							>
+						</label>
+
+						<button class="primary-button" type="submit">
+							Create Account
+						</button>
+					</form>
+
+					<p id="auth-message" class="message"></p>
+
+				</div>
+			</section>
+
+			<!-- ORGANIZATION SETUP -->
+			<section id="organization-view" class="hidden">
+				<div class="setup-container">
+
+					<div class="section-heading">
+						<span class="eyebrow">GET STARTED</span>
+						<h2>Where do you work?</h2>
+						<p>Create a new organization or join one with a company code.</p>
+					</div>
+
+					<div class="setup-grid">
+
+						<div class="setup-card">
+							<h3>Create an organization</h3>
+							<p>You'll become the administrator and receive a company code for your team.</p>
+
+							<form id="create-organization-form">
+								<label>
+									Organization Name
+									<input id="organization-name" required>
+								</label>
+
+								<button class="primary-button" type="submit">
+									Create Organization
+								</button>
+							</form>
+						</div>
+
+						<div class="setup-card">
+							<h3>Join your team</h3>
+							<p>Enter the company code provided by your administrator.</p>
+
+							<form id="join-organization-form">
+								<label>
+									Company Code
+									<input id="company-code" required>
+								</label>
+
+								<button class="secondary-button" type="submit">
+									Join Organization
+								</button>
+							</form>
+						</div>
+
+					</div>
+
+					<p id="organization-message" class="message"></p>
+
+				</div>
+			</section>
+
+			<!-- MAIN INVENTORY APP -->
+			<section id="inventory-view" class="hidden">
+
+				<div class="dashboard-header">
+					<div>
+						<span class="eyebrow">INVENTORY</span>
+						<h2 id="organization-title">Organization</h2>
+					</div>
+
+					<div class="account-area">
+						<span id="user-name"></span>
+						<button id="logout-button" class="text-button">Sign Out</button>
+					</div>
+				</div>
+
+				<div class="toolbar">
+					<div class="search-box">
+						<input
+							id="inventory-search"
+							type="search"
+							placeholder="Search inventory..."
+						>
+					</div>
+
+					<select id="inventory-sort">
+						<option value="asc">A–Z</option>
+						<option value="desc">Z–A</option>
+					</select>
+
+					<button id="manage-locations-button" class="secondary-button">
+						Locations
+					</button>
+
+					<button id="add-item-button" class="primary-button">
+						+ Add Item
+					</button>
+                    <div id="item-modal" class="modal hidden">
+	<div class="modal-card">
+		<div class="modal-header">
+			<h3>Add Inventory Item</h3>
+			<button id="close-item-modal" class="text-button">✕</button>
+		</div>
+
+		<form id="add-item-form">
+			<label>
+				Item Name
+				<input id="item-name" required>
+			</label>
+
+			<label>
+				Quantity
+				<input id="item-quantity" type="number" min="0" value="1" required>
+			</label>
+
+			<label>
+				Location
+				<select id="item-location">
+					<option value="">No location</option>
+				</select>
+			</label>
+
+			<label>
+				Notes
+				<input id="item-notes">
+			</label>
+
+			<button class="primary-button" type="submit">Add Item</button>
+		</form>
+
+		<p id="item-message" class="message"></p>
+	</div>
+</div><div id="locations-modal" class="modal hidden">
+	<div class="modal-card">
+		<div class="modal-header">
+			<div>
+				<h3>Manage Locations</h3>
+				<p>Create locations and nest them inside other locations.</p>
+			</div>
+			<button id="close-locations-modal" class="text-button">✕</button>
+		</div>
+
+		<form id="add-location-form">
+			<label>
+				Location Name
+				<input id="location-name" placeholder="e.g. Warehouse, Shelf 3, Cabinet A" required>
+			</label>
+
+			<label>
+				Inside
+				<select id="location-parent">
+					<option value="">Top-level location</option>
+				</select>
+			</label>
+
+			<button class="primary-button" type="submit">
+				+ Add Location
+			</button>
+		</form>
+
+		<p id="location-message" class="message"></p>
+
+		<div id="locations-list"></div>
+	</div>
+</div>
+
+				<div class="inventory-card">
+					<div class="inventory-table-header">
+						<span>Item</span>
+						<span>Location</span>
+						<span>Quantity</span>
+						<span></span>
+					</div>
+
+					<div id="inventory-list">
+						<div class="empty-state">
+							<h3>Your inventory is empty.</h3>
+							<p>Add your first item to get started.</p>
+						</div>
+					</div>
+				</div>
+
+			</section>
+
+		</main>
+
+	</div>
+
+	<script src="/app.js"></script>
+</body>
+</html>
