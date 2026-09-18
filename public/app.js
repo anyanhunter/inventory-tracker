@@ -16,6 +16,7 @@ let invites = [];
 let recoveryPreviewData = null;
 let confirmCallback = null;
 let searchTimer = null;
+let returnToItemModal = false;
 
 
 // ============================================================
@@ -541,6 +542,58 @@ $("inventory-sort").addEventListener(
 );
 
 
+// ============================================================
+// QUICK ADD FROM INVENTORY ITEM
+// ============================================================
+
+$("quick-add-category").addEventListener(
+	"click",
+	async () => {
+		returnToItemModal = true;
+
+		hide($("item-modal"));
+
+		try {
+			await loadCategoriesManager();
+
+			setMessage("category-message");
+
+			show($("categories-modal"));
+		} catch (error) {
+			returnToItemModal = false;
+
+			show($("item-modal"));
+
+			toast(error.message, true);
+		}
+	}
+);
+
+
+$("quick-add-location").addEventListener(
+	"click",
+	async () => {
+		returnToItemModal = true;
+
+		hide($("item-modal"));
+
+		try {
+			await loadLocationsManager();
+
+			setMessage("location-message");
+
+			show($("locations-modal"));
+		} catch (error) {
+			returnToItemModal = false;
+
+			show($("item-modal"));
+
+			toast(error.message, true);
+		}
+	}
+);
+
+
 $("add-item-button").addEventListener(
 	"click",
 	async () => {
@@ -567,9 +620,13 @@ $("add-item-button").addEventListener(
 
 
 async function closeItemModal() {
+	returnToItemModal = false;
+
 	hide($("item-modal"));
+
 	$("item-form").reset();
 	$("item-id").value = "";
+
 	setMessage("item-message");
 }
 
@@ -878,6 +935,8 @@ async function loadLocationsManager() {
 $("manage-locations-button").addEventListener(
 	"click",
 	async () => {
+		returnToItemModal = false;
+
 		try {
 			await loadLocationsManager();
 
@@ -893,7 +952,17 @@ $("manage-locations-button").addEventListener(
 
 $("close-locations-modal").addEventListener(
 	"click",
-	() => hide($("locations-modal"))
+	async () => {
+		hide($("locations-modal"));
+
+		if (returnToItemModal) {
+			returnToItemModal = false;
+
+			await loadLocations();
+
+			show($("item-modal"));
+		}
+	}
 );
 
 
@@ -902,8 +971,10 @@ $("add-location-form").addEventListener(
 	async (event) => {
 		event.preventDefault();
 
+		setMessage("location-message");
+
 		try {
-			await api(
+			const newLocation = await api(
 				`/api/organizations/${currentOrganizationId}/locations`,
 				{
 					method: "POST",
@@ -920,6 +991,22 @@ $("add-location-form").addEventListener(
 			$("location-name").value = "";
 
 			await loadLocationsManager();
+
+			if (returnToItemModal) {
+				returnToItemModal = false;
+
+				$("item-location").value =
+					newLocation.id;
+
+				hide($("locations-modal"));
+				show($("item-modal"));
+
+				toast(
+					"Location added and selected."
+				);
+
+				return;
+			}
 
 			toast("Location added.");
 		} catch (error) {
@@ -943,8 +1030,8 @@ $("locations-list").addEventListener(
 		if (!button) return;
 
 		openConfirm(
-			"Delete location?",
-			`Delete "${button.dataset.name}"? Locations containing inventory or child locations cannot be deleted.`,
+	"Delete location and everything inside?",
+	`Delete "${button.dataset.name}"? This will permanently remove this location, every location inside it, and all inventory stored in those locations. This action will be recorded in the audit history.`,
 			async () => {
 				await api(
 					`/api/organizations/${currentOrganizationId}/locations/${button.dataset.id}`,
@@ -1002,6 +1089,8 @@ async function loadCategoriesManager() {
 $("manage-categories-button").addEventListener(
 	"click",
 	async () => {
+		returnToItemModal = false;
+
 		try {
 			await loadCategoriesManager();
 
@@ -1017,7 +1106,17 @@ $("manage-categories-button").addEventListener(
 
 $("close-categories-modal").addEventListener(
 	"click",
-	() => hide($("categories-modal"))
+	async () => {
+		hide($("categories-modal"));
+
+		if (returnToItemModal) {
+			returnToItemModal = false;
+
+			await loadCategories();
+
+			show($("item-modal"));
+		}
+	}
 );
 
 
@@ -1026,8 +1125,10 @@ $("add-category-form").addEventListener(
 	async (event) => {
 		event.preventDefault();
 
+		setMessage("category-message");
+
 		try {
-			await api(
+			const newCategory = await api(
 				`/api/organizations/${currentOrganizationId}/categories`,
 				{
 					method: "POST",
@@ -1044,6 +1145,22 @@ $("add-category-form").addEventListener(
 			$("category-name").value = "";
 
 			await loadCategoriesManager();
+
+			if (returnToItemModal) {
+				returnToItemModal = false;
+
+				$("item-category").value =
+					newCategory.id;
+
+				hide($("categories-modal"));
+				show($("item-modal"));
+
+				toast(
+					"Category added and selected."
+				);
+
+				return;
+			}
 
 			toast("Category added.");
 		} catch (error) {
@@ -1068,7 +1185,7 @@ $("categories-list").addEventListener(
 
 		openConfirm(
 			"Delete category?",
-			`Delete "${button.dataset.name}"? Categories containing inventory or subcategories cannot be deleted.`,
+			`Delete "${button.dataset.name}"? You must first remove any inventory or categories inside it.`,
 			async () => {
 				await api(
 					`/api/organizations/${currentOrganizationId}/categories/${button.dataset.id}`,
@@ -1085,8 +1202,6 @@ $("categories-list").addEventListener(
 		);
 	}
 );
-
-
 // ============================================================
 // ADMIN MODAL
 // ============================================================
@@ -1549,42 +1664,70 @@ async function loadAuditHistory() {
 	}
 }
 
-
 function auditDescription(log) {
 	const userName = log.user
 		? `${log.user.firstName} ${log.user.lastName}`
 		: "Unknown user";
 
-	const beforeName =
-		log.beforeData?.name;
-
-	const afterName =
-		log.afterData?.name;
+	const before = log.beforeData || {};
+	const after = log.afterData || {};
 
 	const itemName =
-		afterName ||
-		beforeName ||
+		after.name ||
+		before.name ||
 		log.entityType
 			.replaceAll("_", " ")
 			.toLowerCase();
 
 	if (log.action === "CREATE") {
-		return `${userName} created ${itemName}`;
-	}
-
-	if (log.action === "UPDATE") {
-		return `${userName} updated ${itemName}`;
+		return `${userName} added ${itemName}`;
 	}
 
 	if (log.action === "DELETE") {
 		return `${userName} deleted ${itemName}`;
 	}
 
-	if (log.action === "RECOVERY") {
-		return `${userName} performed user-specific recovery`;
+	if (log.action === "UPDATE") {
+		const changes = [];
+
+		if (before.name !== after.name) {
+			changes.push(
+				`Name: ${before.name || "None"} → ${after.name || "None"}`
+			);
+		}
+
+		if (before.quantity !== after.quantity) {
+			changes.push(
+				`Quantity: ${before.quantity ?? 0} → ${after.quantity ?? 0}`
+			);
+		}
+
+		if (before.notes !== after.notes) {
+			changes.push(
+				`Notes: ${before.notes || "None"} → ${after.notes || "None"}`
+			);
+		}
+
+		if (before.locationId !== after.locationId) {
+			changes.push("Location changed");
+		}
+
+		if (before.categoryId !== after.categoryId) {
+			changes.push("Category changed");
+		}
+
+		if (changes.length) {
+			return `${userName} updated ${itemName} — ${changes.join("; ")}`;
+		}
+
+		return `${userName} updated ${itemName}`;
 	}
 
-	return `${userName} performed ${log.action.toLowerCase()}`;
+	if (log.action === "RECOVERY") {
+		return `${userName} performed a recovery`;
+	}
+
+	return `${userName} ${log.action.toLowerCase()} ${itemName}`;
 }
 
 
@@ -1866,8 +2009,35 @@ $("confirm-action-button").addEventListener(
 
 
 // ============================================================
-// MODAL BACKDROP CLOSING
+// MODAL CLOSING
 // ============================================================
+
+function closeStandardModal(modal) {
+	if (!modal) return;
+
+	/*
+		If the user opened Locations or Categories from
+		the Add Item form, closing that manager should
+		return them to their unfinished item instead of
+		throwing their work away.
+	*/
+
+	if (
+		returnToItemModal &&
+		(
+			modal.id === "locations-modal" ||
+			modal.id === "categories-modal"
+		)
+	) {
+		hide(modal);
+		returnToItemModal = false;
+		show($("item-modal"));
+		return;
+	}
+
+	hide(modal);
+}
+
 
 [
 	"item-modal",
@@ -1880,9 +2050,14 @@ $("confirm-action-button").addEventListener(
 	modal.addEventListener(
 		"click",
 		(event) => {
-			if (event.target === modal) {
-				hide(modal);
+			if (event.target !== modal) return;
+
+			if (modal.id === "item-modal") {
+				closeItemModal();
+				return;
 			}
+
+			closeStandardModal(modal);
 		}
 	);
 });
@@ -1910,9 +2085,15 @@ document.addEventListener(
 
 		if (visibleModal.id === "confirm-modal") {
 			closeConfirm();
-		} else {
-			hide(visibleModal);
+			return;
 		}
+
+		if (visibleModal.id === "item-modal") {
+			closeItemModal();
+			return;
+		}
+
+		closeStandardModal(visibleModal);
 	}
 );
 

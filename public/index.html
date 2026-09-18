@@ -405,20 +405,38 @@
 					</label>
 
 					<label>
-						Category
-						<select id="item-category">
-							<option value="">No category</option>
-						</select>
-					</label>
+	Category
+	<div class="select-with-action">
+		<select id="item-category">
+			<option value="">No category</option>
+		</select>
+		<button
+			type="button"
+			class="inline-add-button"
+			id="quick-add-category"
+		>
+			+ New
+		</button>
+	</div>
+</label>
 
 				</div>
 
-				<label>
-					Location
-					<select id="item-location">
-						<option value="">No location</option>
-					</select>
-				</label>
+			<label>
+	Location
+	<div class="select-with-action">
+		<select id="item-location">
+			<option value="">No location</option>
+		</select>
+		<button
+			type="button"
+			class="inline-add-button"
+			id="quick-add-location"
+		>
+			+ New
+		</button>
+	</div>
+</label>
 
 				<label>
 					Notes
@@ -799,13 +817,13 @@
 			<section id="recovery-panel" class="admin-panel hidden">
 
 				<div class="recovery-warning">
-					<strong>User-Specific Recovery</strong>
-					<p>
-						Reverse changes made by one employee from a
-						selected point forward without rolling back the
-						entire organization.
-					</p>
-				</div>
+	<strong>Undo an Employee’s Changes</strong>
+	<p>
+		Choose an employee and a starting date. You’ll review
+		their changes before anything is undone. Changes made
+		by other employees will stay intact.
+	</p>
+</div>
 
 				<div class="recovery-controls">
 

@@ -12,9 +12,9 @@
 	--surface: #ffffff;
 	--surface-soft: #fafafa;
 
-	--accent: #395d50;
-	--accent-dark: #29483e;
-	--accent-soft: #e7efec;
+	--accent: #4169a1;
+	--accent-dark: #31527f;
+	--accent-soft: #e8eef7;
 
 	--danger: #a54545;
 	--danger-dark: #853535;
@@ -667,7 +667,25 @@ h4 {
 
 	pointer-events: none;
 }
+.select-with-action {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 7px;
+}
 
+.inline-add-button {
+	padding: 0 12px;
+	border: 1px solid #d4d9de;
+	border-radius: var(--small-radius);
+	background: var(--accent-soft);
+	color: var(--accent);
+	font-weight: 750;
+	white-space: nowrap;
+}
+
+.inline-add-button:hover {
+	background: #dce6f3;
+}
 
 /* ============================================================
    INVENTORY

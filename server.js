@@ -855,63 +855,168 @@ app.delete(
 			const { organizationId, locationId } =
 				req.params;
 
-			const location =
+			const rootLocation =
 				await prisma.location.findFirst({
 					where: {
 						id: locationId,
 						organizationId
-					},
-					include: {
-						children: true,
-						inventoryItems: true
 					}
 				});
 
-			if (!location) {
+			if (!rootLocation) {
 				return res.status(404).json({
 					error: "Location not found"
 				});
 			}
 
-			if (location.children.length) {
-				return res.status(400).json({
-					error:
-						"Delete the locations inside this location first."
+			/*
+				Find the selected location and every
+				location nested inside it.
+			*/
+
+			const allLocations =
+				await prisma.location.findMany({
+					where: {
+						organizationId
+					}
 				});
+
+			const locationIds = [];
+			const locationsToDelete = [];
+
+			function collectLocations(parentId) {
+				const matches =
+					allLocations.filter(
+						(location) =>
+							location.id === parentId ||
+							location.parentId === parentId
+					);
+
+				for (const location of matches) {
+					if (
+						locationIds.includes(location.id)
+					) {
+						continue;
+					}
+
+					locationIds.push(location.id);
+					locationsToDelete.push(location);
+
+					collectLocations(location.id);
+				}
 			}
 
-			if (location.inventoryItems.length) {
-				return res.status(400).json({
-					error:
-						"Move or remove the inventory in this location first."
+			collectLocations(rootLocation.id);
+
+			/*
+				Collect inventory stored anywhere inside
+				the location tree before anything is deleted.
+			*/
+
+			const inventoryToDelete =
+				await prisma.inventoryItem.findMany({
+					where: {
+						organizationId,
+						locationId: {
+							in: locationIds
+						}
+					}
 				});
-			}
 
-			const beforeData = {
-				id: location.id,
-				name: location.name,
-				parentId: location.parentId,
-				organizationId:
-					location.organizationId
-			};
+			await prisma.$transaction(async (tx) => {
+				/*
+					Delete inventory first and preserve a
+					full snapshot in the audit history so
+					admin recovery can recreate it.
+				*/
 
-			await prisma.location.delete({
-				where: {
-					id: location.id
+				for (const item of inventoryToDelete) {
+					const beforeData = cleanItem(item);
+
+					await tx.inventoryItem.delete({
+						where: {
+							id: item.id
+						}
+					});
+
+					await tx.auditLog.create({
+						data: {
+							userId: req.user.id,
+							organizationId,
+							action: "DELETE",
+							entityType:
+								"INVENTORY_ITEM",
+							entityId: item.id,
+							beforeData
+						}
+					});
+				}
+
+				/*
+					Delete locations deepest-first so a
+					parent is never removed before the
+					locations inside it.
+				*/
+
+				const orderedLocations =
+					[...locationsToDelete].sort(
+						(a, b) => {
+							function depth(location) {
+								let count = 0;
+								let current = location;
+
+								while (current?.parentId) {
+									count++;
+
+									current =
+										allLocations.find(
+											(entry) =>
+												entry.id ===
+												current.parentId
+										);
+								}
+
+								return count;
+							}
+
+							return depth(b) - depth(a);
+						}
+					);
+
+				for (const location of orderedLocations) {
+					const beforeData = {
+						id: location.id,
+						name: location.name,
+						parentId: location.parentId,
+						organizationId:
+							location.organizationId
+					};
+
+					await tx.location.delete({
+						where: {
+							id: location.id
+						}
+					});
+
+					await tx.auditLog.create({
+						data: {
+							userId: req.user.id,
+							organizationId,
+							action: "DELETE",
+							entityType: "LOCATION",
+							entityId: location.id,
+							beforeData
+						}
+					});
 				}
 			});
 
-			await writeAudit({
-				userId: req.user.id,
-				organizationId,
-				action: "DELETE",
-				entityType: "LOCATION",
-				entityId: location.id,
-				beforeData
-			});
-
 			res.json({
-				message: "Location deleted"
+				message: "Location deleted",
+				deletedLocations:
+					locationsToDelete.length,
+				deletedInventory:
+					inventoryToDelete.length
 			});
 		} catch (error) {
 			console.error(error);
