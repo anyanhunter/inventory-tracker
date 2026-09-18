@@ -15,60 +15,95 @@
 				<div class="brand-mark">I</div>
 				<div>
 					<h1>Inventory</h1>
-					<p>Simple inventory management</p>
+					<p>Organized. Shared. Accountable.</p>
 				</div>
 			</div>
 		</header>
 
 		<main>
 
-			<!-- LOGIN / REGISTER -->
+			<!-- ==================================================
+			     AUTH
+			================================================== -->
+
 			<section id="auth-view" class="auth-view">
 				<div class="auth-card">
 
 					<div class="auth-heading">
 						<span class="eyebrow">WELCOME</span>
-						<h2>Keep track of what you have and where it lives.</h2>
-						<p>Sign in to access your organization's inventory.</p>
+						<h2>Know what you have and exactly where it lives.</h2>
+						<p>
+							Shared inventory management built for real teams,
+							real spaces, and real accountability.
+						</p>
 					</div>
 
 					<div class="auth-tabs">
-						<button id="login-tab" class="tab active">Sign In</button>
-						<button id="register-tab" class="tab">Create Account</button>
+						<button id="login-tab" class="tab active" type="button">
+							Sign In
+						</button>
+
+						<button id="register-tab" class="tab" type="button">
+							Create Account
+						</button>
 					</div>
 
 					<form id="login-form">
 						<label>
 							Email
-							<input id="login-email" type="email" required>
+							<input
+								id="login-email"
+								type="email"
+								autocomplete="email"
+								required
+							>
 						</label>
 
 						<label>
 							Password
-							<input id="login-password" type="password" required>
+							<input
+								id="login-password"
+								type="password"
+								autocomplete="current-password"
+								required
+							>
 						</label>
 
-						<button class="primary-button" type="submit">
+						<button class="primary-button full-button" type="submit">
 							Sign In
 						</button>
 					</form>
 
 					<form id="register-form" class="hidden">
+
 						<div class="name-row">
 							<label>
 								First Name
-								<input id="register-first-name" required>
+								<input
+									id="register-first-name"
+									autocomplete="given-name"
+									required
+								>
 							</label>
 
 							<label>
 								Last Name
-								<input id="register-last-name" required>
+								<input
+									id="register-last-name"
+									autocomplete="family-name"
+									required
+								>
 							</label>
 						</div>
 
 						<label>
 							Email
-							<input id="register-email" type="email" required>
+							<input
+								id="register-email"
+								type="email"
+								autocomplete="email"
+								required
+							>
 						</label>
 
 						<label>
@@ -77,11 +112,16 @@
 								id="register-password"
 								type="password"
 								minlength="8"
+								autocomplete="new-password"
 								required
 							>
 						</label>
 
-						<button class="primary-button" type="submit">
+						<p class="field-hint">
+							Use at least 8 characters.
+						</p>
+
+						<button class="primary-button full-button" type="submit">
 							Create Account
 						</button>
 					</form>
@@ -91,45 +131,79 @@
 				</div>
 			</section>
 
-			<!-- ORGANIZATION SETUP -->
+
+			<!-- ==================================================
+			     ORGANIZATION SETUP
+			================================================== -->
+
 			<section id="organization-view" class="hidden">
 				<div class="setup-container">
 
 					<div class="section-heading">
 						<span class="eyebrow">GET STARTED</span>
 						<h2>Where do you work?</h2>
-						<p>Create a new organization or join one with a company code.</p>
+						<p>
+							Create a new organization or join an existing
+							team with a company code.
+						</p>
 					</div>
 
 					<div class="setup-grid">
 
 						<div class="setup-card">
+							<div class="card-icon">+</div>
+
 							<h3>Create an organization</h3>
-							<p>You'll become the administrator and receive a company code for your team.</p>
+
+							<p>
+								Start a shared inventory workspace.
+								You'll become its administrator.
+							</p>
 
 							<form id="create-organization-form">
 								<label>
 									Organization Name
-									<input id="organization-name" required>
+									<input
+										id="organization-name"
+										placeholder="e.g. Northstar Brewing"
+										required
+									>
 								</label>
 
-								<button class="primary-button" type="submit">
+								<button
+									class="primary-button full-button"
+									type="submit"
+								>
 									Create Organization
 								</button>
 							</form>
 						</div>
 
 						<div class="setup-card">
+							<div class="card-icon">→</div>
+
 							<h3>Join your team</h3>
-							<p>Enter the company code provided by your administrator.</p>
+
+							<p>
+								Enter the company code provided by
+								your organization's administrator.
+							</p>
 
 							<form id="join-organization-form">
 								<label>
 									Company Code
-									<input id="company-code" required>
+									<input
+										id="company-code"
+										placeholder="Enter code"
+										autocomplete="off"
+										required
+									>
 								</label>
 
-								<button class="secondary-button" type="submit">
+								<button
+									class="secondary-button full-button"
+									type="submit"
+								>
 									Join Organization
 								</button>
 							</form>
@@ -142,161 +216,134 @@
 				</div>
 			</section>
 
-			<!-- MAIN INVENTORY APP -->
+
+			<!-- ==================================================
+			     MAIN APPLICATION
+			================================================== -->
+
 			<section id="inventory-view" class="hidden">
 
 				<div class="dashboard-header">
+
 					<div>
 						<span class="eyebrow">INVENTORY</span>
 						<h2 id="organization-title">Organization</h2>
+
+						<div class="organization-meta">
+							<span id="role-badge" class="role-badge"></span>
+							<span id="inventory-summary"></span>
+						</div>
 					</div>
 
 					<div class="account-area">
-						<span id="user-name"></span>
-						<button id="logout-button" class="text-button">Sign Out</button>
+						<div class="account-copy">
+							<strong id="user-name"></strong>
+							<span id="user-email"></span>
+						</div>
+
+						<button
+							id="logout-button"
+							class="text-button"
+							type="button"
+						>
+							Sign Out
+						</button>
 					</div>
+
 				</div>
 
+
+				<!-- Navigation -->
+
+				<nav class="dashboard-nav">
+
+					<button
+						id="inventory-nav-button"
+						class="nav-button active"
+						type="button"
+					>
+						Inventory
+					</button>
+
+					<button
+						id="manage-locations-button"
+						class="nav-button"
+						type="button"
+					>
+						Locations
+					</button>
+
+					<button
+						id="manage-categories-button"
+						class="nav-button"
+						type="button"
+					>
+						Categories
+					</button>
+
+					<button
+						id="admin-button"
+						class="nav-button admin-only hidden"
+						type="button"
+					>
+						Admin
+					</button>
+
+				</nav>
+
+
+				<!-- Inventory toolbar -->
+
 				<div class="toolbar">
+
 					<div class="search-box">
+						<span class="search-icon">⌕</span>
+
 						<input
 							id="inventory-search"
 							type="search"
-							placeholder="Search inventory..."
+							placeholder="Search items, locations, categories..."
 						>
 					</div>
 
-					<select id="inventory-sort">
+					<select id="inventory-sort" aria-label="Sort inventory">
 						<option value="asc">A–Z</option>
 						<option value="desc">Z–A</option>
 					</select>
 
-					<button id="manage-locations-button" class="secondary-button">
-						Locations
-					</button>
-					<button id="manage-categories-button" class="secondary-button">
-	Categories
-</button>
-
-					<button id="add-item-button" class="primary-button">
+					<button
+						id="add-item-button"
+						class="primary-button"
+						type="button"
+					>
 						+ Add Item
 					</button>
-                    <div id="item-modal" class="modal hidden">
-	<div class="modal-card">
-		<div class="modal-header">
-			<h3>Add Inventory Item</h3>
-			<button id="close-item-modal" class="text-button">✕</button>
-		</div>
 
-		<form id="add-item-form">
-			<label>
-				Item Name
-				<input id="item-name" required>
-			</label>
+				</div>
 
-			<label>
-				Quantity
-				<input id="item-quantity" type="number" min="0" value="1" required>
-			</label>
 
-			<label>
-				Location
-				<select id="item-location">
-					<option value="">No location</option>
-				</select>
-			</label>
-
-			<label>
-				Notes
-				<input id="item-notes">
-			</label>
-
-			<button class="primary-button" type="submit">Add Item</button>
-		</form>
-
-		<p id="item-message" class="message"></p>
-	</div>
-</div><div id="locations-modal" class="modal hidden">
-	<div class="modal-card">
-		<div class="modal-header">
-			<div>
-				<h3>Manage Locations</h3>
-				<p>Create locations and nest them inside other locations.</p>
-			</div>
-			<button id="close-locations-modal" class="text-button">✕</button>
-		</div>
-
-		<form id="add-location-form">
-			<label>
-				Location Name
-				<input id="location-name" placeholder="e.g. Warehouse, Shelf 3, Cabinet A" required>
-			</label>
-
-			<label>
-				Inside
-				<select id="location-parent">
-					<option value="">Top-level location</option>
-				</select>
-			</label>
-
-			<button class="primary-button" type="submit">
-				+ Add Location
-			</button>
-		</form>
-
-		<p id="location-message" class="message"></p>
-
-		<div id="locations-list"></div>
-	</div>
-</div>
-<div id="categories-modal" class="modal hidden">
-	<div class="modal-card">
-		<div class="modal-header">
-			<div>
-				<h3>Manage Categories</h3>
-				<p>Create categories and nest subcategories as deeply as needed.</p>
-			</div>
-			<button id="close-categories-modal" class="text-button">✕</button>
-		</div>
-
-		<form id="add-category-form">
-			<label>
-				Category Name
-				<input id="category-name" placeholder="e.g. Beverages, Brand, Bottles" required>
-			</label>
-
-			<label>
-				Inside
-				<select id="category-parent">
-					<option value="">Top-level category</option>
-				</select>
-			</label>
-
-			<button class="primary-button" type="submit">
-				+ Add Category
-			</button>
-		</form>
-
-		<p id="category-message" class="message"></p>
-
-		<div id="categories-list"></div>
-	</div>
-</div>
+				<!-- Inventory table -->
 
 				<div class="inventory-card">
+
 					<div class="inventory-table-header">
 						<span>Item</span>
+						<span>Category</span>
 						<span>Location</span>
 						<span>Quantity</span>
 						<span></span>
 					</div>
 
 					<div id="inventory-list">
+
 						<div class="empty-state">
+							<div class="empty-icon">□</div>
 							<h3>Your inventory is empty.</h3>
 							<p>Add your first item to get started.</p>
 						</div>
+
 					</div>
+
 				</div>
 
 			</section>
@@ -304,6 +351,575 @@
 		</main>
 
 	</div>
+
+
+	<!-- ========================================================
+	     ADD / EDIT INVENTORY ITEM
+	======================================================== -->
+
+	<div id="item-modal" class="modal hidden">
+
+		<div class="modal-card">
+
+			<div class="modal-header">
+				<div>
+					<span class="eyebrow">INVENTORY</span>
+					<h3 id="item-modal-title">Add Inventory Item</h3>
+				</div>
+
+				<button
+					id="close-item-modal"
+					class="icon-button"
+					type="button"
+					aria-label="Close"
+				>
+					✕
+				</button>
+			</div>
+
+			<form id="item-form">
+
+				<input id="item-id" type="hidden">
+
+				<label>
+					Item Name
+					<input
+						id="item-name"
+						placeholder="What are you tracking?"
+						required
+					>
+				</label>
+
+				<div class="form-grid">
+
+					<label>
+						Quantity
+						<input
+							id="item-quantity"
+							type="number"
+							min="0"
+							step="1"
+							value="1"
+							required
+						>
+					</label>
+
+					<label>
+						Category
+						<select id="item-category">
+							<option value="">No category</option>
+						</select>
+					</label>
+
+				</div>
+
+				<label>
+					Location
+					<select id="item-location">
+						<option value="">No location</option>
+					</select>
+				</label>
+
+				<label>
+					Notes
+					<textarea
+						id="item-notes"
+						rows="3"
+						placeholder="Optional details..."
+					></textarea>
+				</label>
+
+				<p id="item-message" class="message"></p>
+
+				<div class="modal-actions">
+
+					<button
+						id="cancel-item-button"
+						class="secondary-button"
+						type="button"
+					>
+						Cancel
+					</button>
+
+					<button
+						id="save-item-button"
+						class="primary-button"
+						type="submit"
+					>
+						Add Item
+					</button>
+
+				</div>
+
+			</form>
+
+		</div>
+
+	</div>
+
+
+	<!-- ========================================================
+	     LOCATIONS
+	======================================================== -->
+
+	<div id="locations-modal" class="modal hidden">
+
+		<div class="modal-card modal-card-large">
+
+			<div class="modal-header">
+
+				<div>
+					<span class="eyebrow">ORGANIZE</span>
+					<h3>Manage Locations</h3>
+					<p>
+						Create a location hierarchy as detailed as your
+						organization needs.
+					</p>
+				</div>
+
+				<button
+					id="close-locations-modal"
+					class="icon-button"
+					type="button"
+					aria-label="Close"
+				>
+					✕
+				</button>
+
+			</div>
+
+			<form id="add-location-form" class="manager-form">
+
+				<label>
+					Location Name
+					<input
+						id="location-name"
+						placeholder="e.g. Warehouse, Cabinet A, Shelf 3"
+						required
+					>
+				</label>
+
+				<label>
+					Inside
+					<select id="location-parent">
+						<option value="">Top-level location</option>
+					</select>
+				</label>
+
+				<button class="primary-button" type="submit">
+					+ Add Location
+				</button>
+
+			</form>
+
+			<p id="location-message" class="message"></p>
+
+			<div class="manager-section-header">
+				<div>
+					<h4>Location Structure</h4>
+					<p>
+						Nested locations can continue to any depth.
+					</p>
+				</div>
+			</div>
+
+			<div id="locations-list" class="manager-list"></div>
+
+		</div>
+
+	</div>
+
+
+	<!-- ========================================================
+	     CATEGORIES
+	======================================================== -->
+
+	<div id="categories-modal" class="modal hidden">
+
+		<div class="modal-card modal-card-large">
+
+			<div class="modal-header">
+
+				<div>
+					<span class="eyebrow">ORGANIZE</span>
+					<h3>Manage Categories</h3>
+					<p>
+						Create categories and nested subcategories for
+						whatever your organization tracks.
+					</p>
+				</div>
+
+				<button
+					id="close-categories-modal"
+					class="icon-button"
+					type="button"
+					aria-label="Close"
+				>
+					✕
+				</button>
+
+			</div>
+
+			<form id="add-category-form" class="manager-form">
+
+				<label>
+					Category Name
+					<input
+						id="category-name"
+						placeholder="e.g. Beverages, Brand, Bottles"
+						required
+					>
+				</label>
+
+				<label>
+					Inside
+					<select id="category-parent">
+						<option value="">Top-level category</option>
+					</select>
+				</label>
+
+				<button class="primary-button" type="submit">
+					+ Add Category
+				</button>
+
+			</form>
+
+			<p id="category-message" class="message"></p>
+
+			<div class="manager-section-header">
+				<div>
+					<h4>Category Structure</h4>
+					<p>
+						Build as many levels of subcategories as needed.
+					</p>
+				</div>
+			</div>
+
+			<div id="categories-list" class="manager-list"></div>
+
+		</div>
+
+	</div>
+
+
+	<!-- ========================================================
+	     ADMIN
+	======================================================== -->
+
+	<div id="admin-modal" class="modal hidden">
+
+		<div class="modal-card admin-modal-card">
+
+			<div class="modal-header">
+
+				<div>
+					<span class="eyebrow">ADMINISTRATION</span>
+					<h3>Organization Admin</h3>
+					<p>
+						Manage team access, company codes, history,
+						and recovery.
+					</p>
+				</div>
+
+				<button
+					id="close-admin-modal"
+					class="icon-button"
+					type="button"
+					aria-label="Close"
+				>
+					✕
+				</button>
+
+			</div>
+
+
+			<div class="admin-tabs">
+
+				<button
+					class="admin-tab active"
+					data-admin-panel="team-panel"
+					type="button"
+				>
+					Team
+				</button>
+
+				<button
+					class="admin-tab"
+					data-admin-panel="invite-panel"
+					type="button"
+				>
+					Company Code
+				</button>
+
+				<button
+					class="admin-tab"
+					data-admin-panel="history-panel"
+					type="button"
+				>
+					History
+				</button>
+
+				<button
+					class="admin-tab"
+					data-admin-panel="recovery-panel"
+					type="button"
+				>
+					Recovery
+				</button>
+
+			</div>
+
+
+			<!-- TEAM -->
+
+			<section id="team-panel" class="admin-panel">
+
+				<div class="panel-heading">
+					<div>
+						<h4>Team Members</h4>
+						<p>
+							Control organization membership and access.
+						</p>
+					</div>
+				</div>
+
+				<p id="team-message" class="message"></p>
+
+				<div id="members-list" class="admin-list"></div>
+
+			</section>
+
+
+			<!-- INVITES -->
+
+			<section id="invite-panel" class="admin-panel hidden">
+
+				<div class="panel-heading">
+
+					<div>
+						<h4>Company Code</h4>
+						<p>
+							Employees use the active code to join this
+							organization.
+						</p>
+					</div>
+
+					<button
+						id="generate-invite-button"
+						class="primary-button"
+						type="button"
+					>
+						Generate New Code
+					</button>
+
+				</div>
+
+				<div id="active-invite-card" class="invite-card">
+					<span class="eyebrow">ACTIVE CODE</span>
+					<strong id="active-invite-code">—</strong>
+
+					<div class="invite-actions">
+						<button
+							id="copy-invite-button"
+							class="secondary-button"
+							type="button"
+						>
+							Copy Code
+						</button>
+					</div>
+				</div>
+
+				<p id="invite-message" class="message"></p>
+
+				<div class="manager-section-header">
+					<div>
+						<h4>Code History</h4>
+						<p>
+							Previous and inactive organization codes.
+						</p>
+					</div>
+				</div>
+
+				<div id="invites-list" class="admin-list"></div>
+
+			</section>
+
+
+			<!-- HISTORY -->
+
+			<section id="history-panel" class="admin-panel hidden">
+
+				<div class="panel-heading">
+
+					<div>
+						<h4>Audit History</h4>
+						<p>
+							See who changed what and when.
+						</p>
+					</div>
+
+					<button
+						id="refresh-history-button"
+						class="secondary-button"
+						type="button"
+					>
+						Refresh
+					</button>
+
+				</div>
+
+				<div class="history-filters">
+
+					<label>
+						Employee
+						<select id="history-user-filter">
+							<option value="">Everyone</option>
+						</select>
+					</label>
+
+					<label>
+						From
+						<input
+							id="history-from-filter"
+							type="datetime-local"
+						>
+					</label>
+
+				</div>
+
+				<p id="history-message" class="message"></p>
+
+				<div id="audit-list" class="audit-list"></div>
+
+			</section>
+
+
+			<!-- RECOVERY -->
+
+			<section id="recovery-panel" class="admin-panel hidden">
+
+				<div class="recovery-warning">
+					<strong>User-Specific Recovery</strong>
+					<p>
+						Reverse changes made by one employee from a
+						selected point forward without rolling back the
+						entire organization.
+					</p>
+				</div>
+
+				<div class="recovery-controls">
+
+					<label>
+						Employee
+						<select id="recovery-user">
+							<option value="">Choose employee</option>
+						</select>
+					</label>
+
+					<label>
+						Recover changes from
+						<input
+							id="recovery-from"
+							type="datetime-local"
+						>
+					</label>
+
+					<button
+						id="preview-recovery-button"
+						class="secondary-button"
+						type="button"
+					>
+						Preview Changes
+					</button>
+
+				</div>
+
+				<p id="recovery-message" class="message"></p>
+
+				<div id="recovery-preview" class="recovery-preview hidden">
+
+					<div class="panel-heading">
+
+						<div>
+							<h4>Recovery Preview</h4>
+							<p id="recovery-count"></p>
+						</div>
+
+						<button
+							id="execute-recovery-button"
+							class="danger-button"
+							type="button"
+						>
+							Confirm Recovery
+						</button>
+
+					</div>
+
+					<div
+						id="recovery-changes"
+						class="audit-list"
+					></div>
+
+				</div>
+
+			</section>
+
+		</div>
+
+	</div>
+
+
+	<!-- ========================================================
+	     CONFIRMATION MODAL
+	======================================================== -->
+
+	<div id="confirm-modal" class="modal hidden">
+
+		<div class="modal-card confirm-card">
+
+			<div class="modal-header">
+				<div>
+					<span class="eyebrow">PLEASE CONFIRM</span>
+					<h3 id="confirm-title">Are you sure?</h3>
+				</div>
+			</div>
+
+			<p id="confirm-text"></p>
+
+			<div class="modal-actions">
+
+				<button
+					id="confirm-cancel-button"
+					class="secondary-button"
+					type="button"
+				>
+					Cancel
+				</button>
+
+				<button
+					id="confirm-action-button"
+					class="danger-button"
+					type="button"
+				>
+					Confirm
+				</button>
+
+			</div>
+
+		</div>
+
+	</div>
+
+
+	<!-- Toast notifications -->
+
+	<div
+		id="toast"
+		class="toast hidden"
+		role="status"
+		aria-live="polite"
+	></div>
+
 
 	<script src="/app.js"></script>
 </body>
