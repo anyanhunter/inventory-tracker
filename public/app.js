@@ -1185,7 +1185,7 @@ $("categories-list").addEventListener(
 
 		openConfirm(
 			"Delete category?",
-			`Delete "${button.dataset.name}"? You must first remove any inventory or categories inside it.`,
+			`Delete "${button.dataset.name}"? This will permanently remove this category, every category inside it, and all inventory assigned to those categories. This action will be recorded in the audit history and can be recovered by an administrator.`,
 			async () => {
 				await api(
 					`/api/organizations/${currentOrganizationId}/categories/${button.dataset.id}`,
@@ -1860,7 +1860,6 @@ $("preview-recovery-button").addEventListener(
 	}
 );
 
-
 function renderRecoveryPreview(data) {
 	show($("recovery-preview"));
 
@@ -1877,7 +1876,7 @@ function renderRecoveryPreview(data) {
 	if (!data.changes.length) {
 		$("recovery-changes").innerHTML = `
 			<div class="empty-state">
-				<p>No inventory changes to recover.</p>
+				<p>No changes to recover.</p>
 			</div>
 		`;
 
@@ -1891,7 +1890,19 @@ function renderRecoveryPreview(data) {
 					const name =
 						log.afterData?.name ||
 						log.beforeData?.name ||
-						"Inventory item";
+						"Unknown";
+
+					const typeLabels = {
+						INVENTORY_ITEM: "Inventory Item",
+						LOCATION: "Location",
+						CATEGORY: "Category"
+					};
+
+					const type =
+						typeLabels[log.entityType] ||
+						log.entityType
+							.replaceAll("_", " ")
+							.toLowerCase();
 
 					return `
 						<div class="audit-row">
@@ -1905,7 +1916,8 @@ function renderRecoveryPreview(data) {
 							</div>
 
 							<div class="audit-description">
-								${escapeHtml(name)}
+								<strong>${escapeHtml(name)}</strong>
+								<span>${escapeHtml(type)}</span>
 							</div>
 
 							<div class="audit-time">
@@ -1951,7 +1963,7 @@ $("execute-recovery-button").addEventListener(
 
 		openConfirm(
 			"Confirm user-specific recovery?",
-			`Reverse recoverable inventory changes made by ${name} from the selected date/time forward? Changes made later by other employees will be preserved when they conflict.`,
+`Reverse recoverable changes made by ${name} from the selected date/time forward? Changes made later by other employees will be preserved when they conflict.`,
 			async () => {
 				const result = await api(
 					`/api/organizations/${currentOrganizationId}/recovery/execute`,
@@ -1969,7 +1981,11 @@ $("execute-recovery-button").addEventListener(
 
 				resetRecoveryPreview();
 
-				await loadInventory();
+				await Promise.all([
+	loadInventory(),
+	loadLocations(),
+	loadCategories()
+]);
 
 				toast(
 					`Recovery complete: ${result.recovered} reversed, ${result.skipped} preserved/skipped.`

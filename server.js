@@ -1139,66 +1139,126 @@ app.delete(
 				return;
 			}
 
-			const { organizationId, categoryId } =
-				req.params;
+			const { organizationId, categoryId } = req.params;
 
-			const category =
+			const rootCategory =
 				await prisma.category.findFirst({
 					where: {
 						id: categoryId,
 						organizationId
-					},
-					include: {
-						children: true,
-						inventoryItems: true
 					}
 				});
 
-			if (!category) {
+			if (!rootCategory) {
 				return res.status(404).json({
 					error: "Category not found"
 				});
 			}
 
-			if (category.children.length) {
-				return res.status(400).json({
-					error:
-						"Delete the subcategories inside this category first."
+			const allCategories =
+				await prisma.category.findMany({
+					where: {
+						organizationId
+					}
 				});
+
+			const categoryIds = [];
+			const categoryDepths = new Map();
+
+			function collectCategoryIds(parentId, depth = 0) {
+				const children = allCategories.filter(
+					(category) =>
+						category.parentId === parentId
+				);
+
+				for (const child of children) {
+					categoryIds.push(child.id);
+					categoryDepths.set(child.id, depth);
+
+					collectCategoryIds(
+						child.id,
+						depth + 1
+					);
+				}
 			}
 
-			if (category.inventoryItems.length) {
-				return res.status(400).json({
-					error:
-						"Move or remove the inventory in this category first."
+			categoryIds.push(rootCategory.id);
+			categoryDepths.set(rootCategory.id, 0);
+
+			collectCategoryIds(rootCategory.id, 1);
+
+			const categoriesToDelete =
+				allCategories
+					.filter((category) =>
+						categoryIds.includes(category.id)
+					)
+					.sort(
+						(a, b) =>
+							(categoryDepths.get(b.id) || 0) -
+							(categoryDepths.get(a.id) || 0)
+					);
+
+			const inventoryToDelete =
+				await prisma.inventoryItem.findMany({
+					where: {
+						organizationId,
+						categoryId: {
+							in: categoryIds
+						}
+					}
 				});
-			}
 
-			const beforeData = {
-				id: category.id,
-				name: category.name,
-				parentId: category.parentId,
-				organizationId:
-					category.organizationId
-			};
+			await prisma.$transaction(async (tx) => {
 
-			await prisma.category.delete({
-				where: {
-					id: category.id
+				// Delete and audit inventory first.
+				for (const item of inventoryToDelete) {
+					await tx.inventoryItem.delete({
+						where: {
+							id: item.id
+						}
+					});
+
+					await writeAudit({
+						userId: req.user.id,
+						organizationId,
+						action: "DELETE",
+						entityType: "INVENTORY_ITEM",
+						entityId: item.id,
+						beforeData: cleanItem(item)
+					});
+				}
+
+				// Delete deepest categories first.
+				for (const category of categoriesToDelete) {
+					await tx.category.delete({
+						where: {
+							id: category.id
+						}
+					});
+
+					await writeAudit({
+						userId: req.user.id,
+						organizationId,
+						action: "DELETE",
+						entityType: "CATEGORY",
+						entityId: category.id,
+						beforeData: {
+							id: category.id,
+							name: category.name,
+							parentId: category.parentId,
+							organizationId:
+								category.organizationId
+						}
+					});
 				}
 			});
 
-			await writeAudit({
-				userId: req.user.id,
-				organizationId,
-				action: "DELETE",
-				entityType: "CATEGORY",
-				entityId: category.id,
-				beforeData
-			});
-
 			res.json({
-				message: "Category deleted"
+				message: "Category deleted",
+				deletedCategories:
+					categoriesToDelete.length,
+				deletedInventory:
+					inventoryToDelete.length
 			});
 		} catch (error) {
 			console.error(error);
@@ -1708,27 +1768,29 @@ app.post(
 
 			if (Number.isNaN(date.getTime())) {
 				return res.status(400).json({
-					error:
-						"Invalid recovery date/time"
+					error: "Invalid recovery date/time"
 				});
 			}
 
-			const logs =
-				await prisma.auditLog.findMany({
-					where: {
-						organizationId:
-							req.params.organizationId,
-						userId,
-						createdAt: {
-							gte: date
-						},
-						entityType:
-							"INVENTORY_ITEM"
+			const logs = await prisma.auditLog.findMany({
+				where: {
+					organizationId: req.params.organizationId,
+					userId,
+					createdAt: {
+						gte: date
 					},
-					orderBy: {
-						createdAt: "desc"
+					entityType: {
+						in: [
+							"INVENTORY_ITEM",
+							"LOCATION",
+							"CATEGORY"
+						]
 					}
-				});
+				},
+				orderBy: {
+					createdAt: "desc"
+				}
+			});
 
 			res.json({
 				count: logs.length,
@@ -1738,8 +1800,7 @@ app.post(
 			console.error(error);
 
 			res.status(500).json({
-				error:
-					"Unable to preview recovery"
+				error: "Unable to preview recovery"
 			});
 		}
 	}
@@ -1769,210 +1830,458 @@ app.post(
 				});
 			}
 
-			if (userId === req.user.id) {
-				return res.status(400).json({
-					error:
-						"Use another administrator for recovery of your own changes"
-				});
-			}
 
 			const date = new Date(from);
 
 			if (Number.isNaN(date.getTime())) {
 				return res.status(400).json({
-					error:
-						"Invalid recovery date/time"
+					error: "Invalid recovery date/time"
 				});
 			}
 
-			const logs =
-				await prisma.auditLog.findMany({
-					where: {
-						organizationId,
-						userId,
-						createdAt: {
-							gte: date
-						},
-						entityType:
-							"INVENTORY_ITEM"
+			const logs = await prisma.auditLog.findMany({
+				where: {
+					organizationId,
+					userId,
+					createdAt: {
+						gte: date
 					},
-					orderBy: {
-						createdAt: "desc"
+					entityType: {
+						in: [
+							"INVENTORY_ITEM",
+							"LOCATION",
+							"CATEGORY"
+						]
 					}
-				});
+				},
+				orderBy: {
+					createdAt: "desc"
+				}
+			});
 
 			let recovered = 0;
 			let skipped = 0;
 
+			const cleanLocation = (location) => {
+				if (!location) return null;
+
+				return {
+					id: location.id,
+					name: location.name,
+					parentId: location.parentId,
+					organizationId: location.organizationId
+				};
+			};
+
+			const cleanCategory = (category) => {
+				if (!category) return null;
+
+				return {
+					id: category.id,
+					name: category.name,
+					parentId: category.parentId,
+					organizationId: category.organizationId
+				};
+			};
+
+			const matchesSnapshot = (current, snapshot) =>
+				JSON.stringify(current) ===
+				JSON.stringify(snapshot);
+
 			await prisma.$transaction(async (tx) => {
 				for (const log of logs) {
-					/*
-						Important:
-						We only reverse a change when the current
-						record still matches the state created by
-						that user's action.
 
-						If another employee changed the same item
-						later, we skip it instead of destroying
-						their legitimate work.
-					*/
+					// ============================================
+					// INVENTORY ITEMS
+					// ============================================
 
-					if (log.action === "CREATE") {
-						const current =
-							await tx.inventoryItem.findFirst({
+					if (log.entityType === "INVENTORY_ITEM") {
+						if (log.action === "CREATE") {
+							const current =
+								await tx.inventoryItem.findFirst({
+									where: {
+										id: log.entityId,
+										organizationId
+									}
+								});
+
+							if (!current) {
+								skipped++;
+								continue;
+							}
+
+							if (
+								!matchesSnapshot(
+									cleanItem(current),
+									log.afterData
+								)
+							) {
+								skipped++;
+								continue;
+							}
+
+							await tx.inventoryItem.delete({
 								where: {
-									id: log.entityId,
+									id: current.id
+								}
+							});
+
+							recovered++;
+							continue;
+						}
+
+						if (log.action === "UPDATE") {
+							const current =
+								await tx.inventoryItem.findFirst({
+									where: {
+										id: log.entityId,
+										organizationId
+									}
+								});
+
+							if (!current || !log.beforeData) {
+								skipped++;
+								continue;
+							}
+
+							if (
+								!matchesSnapshot(
+									cleanItem(current),
+									log.afterData
+								)
+							) {
+								skipped++;
+								continue;
+							}
+
+							const before = log.beforeData;
+
+							const location =
+								before.locationId
+									? await tx.location.findFirst({
+											where: {
+												id: before.locationId,
+												organizationId
+											}
+										})
+									: null;
+
+							const category =
+								before.categoryId
+									? await tx.category.findFirst({
+											where: {
+												id: before.categoryId,
+												organizationId
+											}
+										})
+									: null;
+
+							await tx.inventoryItem.update({
+								where: {
+									id: current.id
+								},
+								data: {
+									name: before.name,
+									quantity: before.quantity,
+									notes: before.notes,
+									locationId:
+										location
+											? before.locationId
+											: null,
+									categoryId:
+										category
+											? before.categoryId
+											: null
+								}
+							});
+
+							recovered++;
+							continue;
+						}
+
+						if (log.action === "DELETE") {
+							const existing =
+								await tx.inventoryItem.findUnique({
+									where: {
+										id: log.entityId
+									}
+								});
+
+							if (existing || !log.beforeData) {
+								skipped++;
+								continue;
+							}
+
+							const before = log.beforeData;
+
+							const location =
+								before.locationId
+									? await tx.location.findFirst({
+											where: {
+												id: before.locationId,
+												organizationId
+											}
+										})
+									: null;
+
+							const category =
+								before.categoryId
+									? await tx.category.findFirst({
+											where: {
+												id: before.categoryId,
+												organizationId
+											}
+										})
+									: null;
+
+							await tx.inventoryItem.create({
+								data: {
+									id: before.id,
+									name: before.name,
+									quantity: before.quantity,
+									notes: before.notes,
+									organizationId,
+									locationId:
+										location
+											? before.locationId
+											: null,
+									categoryId:
+										category
+											? before.categoryId
+											: null
+								}
+							});
+
+							recovered++;
+							continue;
+						}
+					}
+
+
+					// ============================================
+					// LOCATIONS
+					// ============================================
+
+					if (log.entityType === "LOCATION") {
+						if (log.action === "CREATE") {
+							const current =
+								await tx.location.findFirst({
+									where: {
+										id: log.entityId,
+										organizationId
+									}
+								});
+
+							if (!current) {
+								skipped++;
+								continue;
+							}
+
+							if (
+								!matchesSnapshot(
+									cleanLocation(current),
+									log.afterData
+								)
+							) {
+								skipped++;
+								continue;
+							}
+
+							const locationsInside =
+								await tx.location.count({
+									where: {
+										parentId: current.id,
+										organizationId
+									}
+								});
+
+							const inventoryInside =
+								await tx.inventoryItem.count({
+									where: {
+										locationId: current.id,
+										organizationId
+									}
+								});
+
+							if (
+								locationsInside > 0 ||
+								inventoryInside > 0
+							) {
+								skipped++;
+								continue;
+							}
+
+							await tx.location.delete({
+								where: {
+									id: current.id
+								}
+							});
+
+							recovered++;
+							continue;
+						}
+
+						if (log.action === "DELETE") {
+							const existing =
+								await tx.location.findUnique({
+									where: {
+										id: log.entityId
+									}
+								});
+
+							if (existing || !log.beforeData) {
+								skipped++;
+								continue;
+							}
+
+							const before = log.beforeData;
+
+							let parentId = null;
+
+							if (before.parentId) {
+								const parent =
+									await tx.location.findFirst({
+										where: {
+											id: before.parentId,
+											organizationId
+										}
+									});
+
+								if (!parent) {
+									skipped++;
+									continue;
+								}
+
+								parentId = before.parentId;
+							}
+
+							await tx.location.create({
+								data: {
+									id: before.id,
+									name: before.name,
+									parentId,
 									organizationId
 								}
 							});
 
-						if (!current) {
-							skipped++;
+							recovered++;
 							continue;
 						}
-
-						const currentClean =
-							cleanItem(current);
-
-						if (
-							JSON.stringify(currentClean) !==
-							JSON.stringify(log.afterData)
-						) {
-							skipped++;
-							continue;
-						}
-
-						await tx.inventoryItem.delete({
-							where: {
-								id: current.id
-							}
-						});
-
-						recovered++;
-						continue;
 					}
 
 
-					if (log.action === "UPDATE") {
-						const current =
-							await tx.inventoryItem.findFirst({
+					// ============================================
+					// CATEGORIES
+					// ============================================
+
+					if (log.entityType === "CATEGORY") {
+						if (log.action === "CREATE") {
+							const current =
+								await tx.category.findFirst({
+									where: {
+										id: log.entityId,
+										organizationId
+									}
+								});
+
+							if (!current) {
+								skipped++;
+								continue;
+							}
+
+							if (
+								!matchesSnapshot(
+									cleanCategory(current),
+									log.afterData
+								)
+							) {
+								skipped++;
+								continue;
+							}
+
+							const categoriesInside =
+								await tx.category.count({
+									where: {
+										parentId: current.id,
+										organizationId
+									}
+								});
+
+							const inventoryInside =
+								await tx.inventoryItem.count({
+									where: {
+										categoryId: current.id,
+										organizationId
+									}
+								});
+
+							if (
+								categoriesInside > 0 ||
+								inventoryInside > 0
+							) {
+								skipped++;
+								continue;
+							}
+
+							await tx.category.delete({
 								where: {
-									id: log.entityId,
+									id: current.id
+								}
+							});
+
+							recovered++;
+							continue;
+						}
+
+						if (log.action === "DELETE") {
+							const existing =
+								await tx.category.findUnique({
+									where: {
+										id: log.entityId
+									}
+								});
+
+							if (existing || !log.beforeData) {
+								skipped++;
+								continue;
+							}
+
+							const before = log.beforeData;
+
+							let parentId = null;
+
+							if (before.parentId) {
+								const parent =
+									await tx.category.findFirst({
+										where: {
+											id: before.parentId,
+											organizationId
+										}
+									});
+
+								if (!parent) {
+									skipped++;
+									continue;
+								}
+
+								parentId = before.parentId;
+							}
+
+							await tx.category.create({
+								data: {
+									id: before.id,
+									name: before.name,
+									parentId,
 									organizationId
 								}
 							});
 
-						if (!current) {
-							skipped++;
+							recovered++;
 							continue;
 						}
-
-						const currentClean =
-							cleanItem(current);
-
-						if (
-							JSON.stringify(currentClean) !==
-							JSON.stringify(log.afterData)
-						) {
-							skipped++;
-							continue;
-						}
-
-						const before =
-							log.beforeData;
-
-						if (!before) {
-							skipped++;
-							continue;
-						}
-
-						await tx.inventoryItem.update({
-							where: {
-								id: current.id
-							},
-							data: {
-								name: before.name,
-								quantity:
-									before.quantity,
-								notes:
-									before.notes,
-								locationId:
-									before.locationId,
-								categoryId:
-									before.categoryId
-							}
-						});
-
-						recovered++;
-						continue;
 					}
 
-
-					if (log.action === "DELETE") {
-						const existing =
-							await tx.inventoryItem.findUnique({
-								where: {
-									id: log.entityId
-								}
-							});
-
-						if (existing) {
-							skipped++;
-							continue;
-						}
-
-						const before =
-							log.beforeData;
-
-						if (!before) {
-							skipped++;
-							continue;
-						}
-
-						const location =
-							before.locationId
-								? await tx.location.findFirst({
-										where: {
-											id:
-												before.locationId,
-											organizationId
-										}
-									})
-								: null;
-
-						const category =
-							before.categoryId
-								? await tx.category.findFirst({
-										where: {
-											id:
-												before.categoryId,
-											organizationId
-										}
-									})
-								: null;
-
-						await tx.inventoryItem.create({
-							data: {
-								id: before.id,
-								name: before.name,
-								quantity:
-									before.quantity,
-								notes:
-									before.notes,
-								organizationId,
-								locationId:
-									location
-										? before.locationId
-										: null,
-								categoryId:
-									category
-										? before.categoryId
-										: null
-							}
-						});
-
-						recovered++;
-					}
+					skipped++;
 				}
 
 				await tx.auditLog.create({
@@ -2000,14 +2309,11 @@ app.post(
 			console.error(error);
 
 			res.status(500).json({
-				error:
-					"Unable to complete recovery"
+				error: "Unable to complete recovery"
 			});
 		}
 	}
 );
-
-
 // ============================================================
 // FALLBACK API ERROR
 // ============================================================
