@@ -3,10 +3,10 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "./generated/prisma/client.ts";
 
-const adapter = new PrismaPg({
+const adapter = new PrismaNeon({
 	connectionString: process.env.DATABASE_URL
 });
 
